@@ -1,18 +1,30 @@
 import csv
 import io
 from app.models import db, Product
+from app.utils import paginate_query
 
 
 class ProductService:
 
     @staticmethod
-    def get_all(category=None, search=None):
+    def get_all(page=1, per_page=20, category=None, search=None, sort_by='name', sort_dir='asc'):
         query = Product.query
         if category:
             query = query.filter_by(category=category)
         if search:
-            query = query.filter(Product.name.ilike(f'%{search}%'))
-        return query.order_by(Product.name).all()
+            pattern = f'%{search}%'
+            query = query.filter(
+                db.or_(
+                    Product.name.ilike(pattern),
+                    Product.sku.ilike(pattern),
+                )
+            )
+        sort_col = getattr(Product, sort_by, Product.name)
+        if sort_dir == 'desc':
+            query = query.order_by(sort_col.desc())
+        else:
+            query = query.order_by(sort_col.asc())
+        return paginate_query(query, page, per_page)
 
     @staticmethod
     def get_by_id(product_id):
@@ -73,8 +85,10 @@ class ProductService:
         return products
 
     @staticmethod
-    def get_low_stock():
-        return Product.query.filter(Product.current_stock < Product.min_stock).all()
+    def get_low_stock(page=1, per_page=20):
+        query = Product.query.filter(Product.current_stock < Product.min_stock)\
+            .order_by(Product.name)
+        return paginate_query(query, page, per_page)
 
     @staticmethod
     def get_inventory_value():

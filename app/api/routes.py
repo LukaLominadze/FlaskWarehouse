@@ -14,10 +14,16 @@ def status():
 
 @bp.route('/products', methods=['GET'])
 def get_products():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
     category = request.args.get('category')
     search = request.args.get('search')
-    products = ProductService.get_all(category=category, search=search)
-    return jsonify([p.to_dict() for p in products])
+    sort_by = request.args.get('sort_by', 'name')
+    sort_dir = request.args.get('sort_dir', 'asc')
+    return jsonify(ProductService.get_all(
+        page=page, per_page=per_page, category=category,
+        search=search, sort_by=sort_by, sort_dir=sort_dir
+    ))
 
 
 @bp.route('/products', methods=['POST'])
@@ -62,7 +68,13 @@ def import_products():
 def get_movements(product_id):
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
-    result = StockService.get_movements(product_id, page=page, per_page=per_page)
+    movement_type = request.args.get('type')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    result = StockService.get_movements(
+        product_id, page=page, per_page=per_page,
+        movement_type=movement_type, date_from=date_from, date_to=date_to
+    )
     return jsonify(result)
 
 
@@ -103,8 +115,9 @@ def stock_out():
 
 @bp.route('/alerts', methods=['GET'])
 def get_alerts():
-    products = ProductService.get_low_stock()
-    return jsonify([p.to_dict() for p in products])
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    return jsonify(ProductService.get_low_stock(page=page, per_page=per_page))
 
 
 @bp.route('/inventory-value', methods=['GET'])
@@ -115,9 +128,13 @@ def get_inventory_value():
 
 @bp.route('/suppliers', methods=['GET'])
 def get_suppliers():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
     country = request.args.get('country')
-    suppliers = SupplierService.get_all(country=country)
-    return jsonify([s.to_dict() for s in suppliers])
+    search = request.args.get('search')
+    return jsonify(SupplierService.get_all(
+        page=page, per_page=per_page, country=country, search=search
+    ))
 
 
 @bp.route('/suppliers', methods=['POST'])
@@ -167,7 +184,9 @@ def convert_currency():
 @bp.route('/reports/turnover', methods=['GET'])
 def get_turnover():
     days = request.args.get('days', 30, type=int)
-    return jsonify(ReportService.inventory_turnover(days=days))
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    return jsonify(ReportService.inventory_turnover(days=days, page=page, per_page=per_page))
 
 
 @bp.route('/reports/top-products', methods=['GET'])

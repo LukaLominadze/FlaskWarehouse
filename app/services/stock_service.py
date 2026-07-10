@@ -1,5 +1,6 @@
 from datetime import date
 from app.models import db, Product, StockMovement
+from app.utils import paginate_query
 
 
 class StockService:
@@ -45,13 +46,14 @@ class StockService:
         return movement
 
     @staticmethod
-    def get_movements(product_id, page=1, per_page=20):
-        pagination = StockMovement.query.filter_by(product_id=product_id)\
-            .order_by(StockMovement.date.desc())\
-            .paginate(page=page, per_page=per_page, error_out=False)
-        return {
-            'items': [m.to_dict() for m in pagination.items],
-            'total': pagination.total,
-            'pages': pagination.pages,
-            'current_page': pagination.page,
-        }
+    def get_movements(product_id, page=1, per_page=20, movement_type=None,
+                      date_from=None, date_to=None):
+        query = StockMovement.query.filter_by(product_id=product_id)
+        if movement_type:
+            query = query.filter_by(type=movement_type)
+        if date_from:
+            query = query.filter(StockMovement.date >= date_from)
+        if date_to:
+            query = query.filter(StockMovement.date <= date_to)
+        query = query.order_by(StockMovement.date.desc())
+        return paginate_query(query, page, per_page)

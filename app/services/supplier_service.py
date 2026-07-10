@@ -1,14 +1,24 @@
 from app.models import db, Supplier
+from app.utils import paginate_query
 
 
 class SupplierService:
 
     @staticmethod
-    def get_all(country=None):
+    def get_all(page=1, per_page=20, country=None, search=None):
         query = Supplier.query
         if country:
             query = query.filter_by(country=country)
-        return query.order_by(Supplier.company).all()
+        if search:
+            pattern = f'%{search}%'
+            query = query.filter(
+                db.or_(
+                    Supplier.company.ilike(pattern),
+                    Supplier.contact.ilike(pattern),
+                )
+            )
+        query = query.order_by(Supplier.company)
+        return paginate_query(query, page, per_page)
 
     @staticmethod
     def get_by_id(supplier_id):
