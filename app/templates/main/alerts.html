@@ -5,7 +5,7 @@
 {% block content %}
 <h1 class="mb-4">Low Stock Alerts</h1>
 
-{% if data.items %}
+{% if data.results %}
 <div class="table-responsive">
     <table class="table table-striped table-bordered">
         <thead class="table-dark">
@@ -19,7 +19,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for p in data.items %}
+            {% for p in data.results %}
             <tr class="table-danger">
                 <td><a href="{{ url_for('main.product_detail', product_id=p.id) }}">{{ p.sku }}</a></td>
                 <td>{{ p.name }}</td>

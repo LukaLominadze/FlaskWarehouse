@@ -21,14 +21,14 @@
         <div class="card mb-4">
             <div class="card-header"><h5>Inventory Turnover ({{ days }} days)</h5></div>
             <div class="card-body">
-                {% if turnover.items %}
+                {% if turnover.results %}
                 <div class="table-responsive">
                     <table class="table table-sm table-striped">
                         <thead>
                             <tr><th>SKU</th><th>Name</th><th>Stock</th><th>Sold</th><th>Rate</th></tr>
                         </thead>
                         <tbody>
-                            {% for t in turnover.items %}
+                            {% for t in turnover.results %}
                             <tr>
                                 <td>{{ t.sku }}</td>
                                 <td>{{ t.name }}</td>

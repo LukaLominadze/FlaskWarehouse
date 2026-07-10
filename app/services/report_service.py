@@ -41,7 +41,7 @@ class ReportService:
             })
 
         return {
-            'items': turnover,
+            'results': turnover,
             'total': total,
             'pages': (total + per_page - 1) // per_page,
             'current_page': page,
