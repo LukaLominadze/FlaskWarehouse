@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>{{ product.name }}</h1>
+    <div>
+        <a href="{{ url_for('main.product_edit', product_id=product.id) }}" class="btn btn-primary">Edit</a>
+        <form method="POST" action="{{ url_for('main.product_delete', product_id=product.id) }}" class="d-inline" onsubmit="return confirm('Delete this product?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5>Details</h5>
+                <table class="table table-sm mb-0">
+                    <tr><th>SKU</th><td>{{ product.sku }}</td></tr>
+                    <tr><th>Category</th><td>{{ product.category or '-' }}</td></tr>
+                    <tr><th>Unit</th><td>{{ product.unit }}</td></tr>
+                    <tr><th>Currency</th><td>{{ product.currency }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5>Stock & Pricing</h5>
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <th>Current Stock</th>
+                        <td class="{% if product.current_stock < product.min_stock %}text-danger fw-bold{% endif %}">
+                            {{ product.current_stock }} {{ product.unit }}
+                            {% if product.current_stock < product.min_stock %}
+                            <span class="badge bg-danger">Low Stock</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr><th>Min Stock</th><td>{{ product.min_stock }} {{ product.unit }}</td></tr>
+                    <tr><th>Purchase Price</th><td>{{ "{:,.2f}".format(product.purchase_price) }} {{ product.currency }}</td></tr>
+                    <tr><th>Sell Price</th><td>{{ "{:,.2f}".format(product.sell_price) }} {{ product.currency }}</td></tr>
+                    <tr><th>Stock Value</th><td>{{ "{:,.2f}".format(product.current_stock * product.purchase_price) }} {{ product.currency }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3>Stock Movements</h3>
+
+{% if movements.items %}
+<div class="table-responsive">
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Qty</th>
+                <th>Cost/Unit</th>
+                <th>Supplier</th>
+                <th>Destination</th>
+                <th>Reference</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in movements.items %}
+            <tr>
+                <td>{{ m.date }}</td>
+                <td>
+                    {% if m.type == 'in' %}
+                    <span class="badge bg-success">IN</span>
+                    {% else %}
+                    <span class="badge bg-warning">OUT</span>
+                    {% endif %}
+                </td>
+                <td>{{ m.quantity }}</td>
+                <td>{{ "{:,.2f}".format(m.cost_per_unit) if m.cost_per_unit else '-' }}</td>
+                <td>{{ m.supplier.company if m.supplier else '-' }}</td>
+                <td>{{ m.destination or '-' }}</td>
+                <td>{{ m.reference or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if movements.pages > 1 %}
+<nav>
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if not movements.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="?page={{ movements.current_page - 1 }}">Prev</a>
+        </li>
+        {% for p in range(1, movements.pages + 1) %}
+        <li class="page-item {% if p == movements.current_page %}active{% endif %}">
+            <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item {% if not movements.has_next %}disabled{% endif %}">
+            <a class="page-link" href="?page={{ movements.current_page + 1 }}">Next</a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<p class="text-muted">No movements recorded yet.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Import CSV{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Import Products from CSV</h1>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <p>Upload a CSV file with the following columns:</p>
+                <code>sku,name,category,unit,current_stock,min_stock,purchase_price,sell_price,currency</code>
+
+                <form method="POST" enctype="multipart/form-data" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <input type="file" name="file" accept=".csv" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                    <a href="{{ url_for('main.product_list') }}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

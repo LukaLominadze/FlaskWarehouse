@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Reports</h1>
+
+<form class="row g-2 mb-4" method="GET">
+    <div class="col-md-3">
+        <select name="days" class="form-select" onchange="this.form.submit()">
+            <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+            <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+            <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+            <option value="365" {% if days == 365 %}selected{% endif %}>Last year</option>
+        </select>
+    </div>
+</form>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><h5>Inventory Turnover ({{ days }} days)</h5></div>
+            <div class="card-body">
+                {% if turnover.items %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr><th>SKU</th><th>Name</th><th>Stock</th><th>Sold</th><th>Rate</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for t in turnover.items %}
+                            <tr>
+                                <td>{{ t.sku }}</td>
+                                <td>{{ t.name }}</td>
+                                <td>{{ t.current_stock }}</td>
+                                <td>{{ t.total_out }}</td>
+                                <td>{{ t.turnover_rate }}x</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No data for this period.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><h5>Top 10 Moving Products ({{ days }} days)</h5></div>
+            <div class="card-body">
+                {% if top_products %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr><th>#</th><th>SKU</th><th>Name</th><th>Stock</th><th>Moved</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for p in top_products %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ p.sku }}</td>
+                                <td>{{ p.name }}</td>
+                                <td>{{ p.current_stock }}</td>
+                                <td><strong>{{ p.total_moved }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No data for this period.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

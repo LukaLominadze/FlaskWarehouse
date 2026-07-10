@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Exchange Rates{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Exchange Rates</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><h5>Current Rates (to GEL)</h5></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr><th>Currency</th><th>Rate</th><th>Source</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for curr, rate in defaults.items() %}
+                        <tr>
+                            <td><strong>{{ curr }}</strong></td>
+                            <td>{{ rate }}</td>
+                            <td><span class="badge bg-secondary">Default</span></td>
+                        </tr>
+                        {% endfor %}
+                        {% for r in rates %}
+                        <tr>
+                            <td><strong>{{ r.target_currency }}</strong></td>
+                            <td>{{ r.rate }}</td>
+                            <td><span class="badge bg-primary">{{ r.date }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5>Update Rate</h5></div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.currency.label }}</label>
+                        {{ form.currency(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.rate.label }}</label>
+                        {{ form.rate(class="form-control", step="0.001") }}
+                        {% for error in form.rate.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {{ form.submit(class="btn btn-primary") }}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
