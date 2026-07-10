@@ -14,11 +14,22 @@
 {% endif %}
 {% endwith %}
 <form method="POST">
-    <label>Username</label>
-    <input type="text" name="username" required>
-    <label>Password</label>
-    <input type="password" name="password" required>
-    <button type="submit">Login</button>
+    {{ form.hidden_tag() }}
+    <div>
+        {{ form.username.label }}
+        {{ form.username() }}
+        {% for error in form.username.errors %}
+        <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <div>
+        {{ form.password.label }}
+        {{ form.password() }}
+        {% for error in form.password.errors %}
+        <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+    {{ form.submit() }}
 </form>
 <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Register</a></p>
 {% endblock %}

@@ -14,13 +14,36 @@
 {% endif %}
 {% endwith %}
 <form method="POST">
-    <label>Username</label>
-    <input type="text" name="username" required>
-    <label>Email</label>
-    <input type="email" name="email" required>
-    <label>Password</label>
-    <input type="password" name="password" required>
-    <button type="submit">Register</button>
+    {{ form.hidden_tag() }}
+    <div>
+        {{ form.username.label }}
+        {{ form.username() }}
+        {% for error in form.username.errors %}
+        <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <div>
+        {{ form.email.label }}
+        {{ form.email() }}
+        {% for error in form.email.errors %}
+        <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <div>
+        {{ form.password.label }}
+        {{ form.password() }}
+        {% for error in form.password.errors %}
+        <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <div>
+        {{ form.password2.label }}
+        {{ form.password2() }}
+        {% for error in form.password2.errors %}
+        <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+    {{ form.submit() }}
 </form>
 <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login</a></p>
 {% endblock %}
