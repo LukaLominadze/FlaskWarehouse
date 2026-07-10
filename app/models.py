@@ -110,3 +110,107 @@ class PackingItem(db.Model):
     is_packed = db.Column(db.Boolean, default=False, nullable=False)
 
     trip = db.relationship('Trip', back_populates='packing_items')
+
+
+class Product(db.Model):
+    __tablename__ = 'products'
+
+    id = db.Column(db.Integer, primary_key=True)
+    sku = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(128), nullable=False)
+    category = db.Column(db.String(64), nullable=True)
+    unit = db.Column(db.String(16), nullable=False, default='pcs')
+    current_stock = db.Column(db.Float, nullable=False, default=0)
+    min_stock = db.Column(db.Float, nullable=False, default=0)
+    purchase_price = db.Column(db.Float, nullable=False, default=0)
+    sell_price = db.Column(db.Float, nullable=False, default=0)
+    currency = db.Column(db.String(3), nullable=False, default='GEL')
+
+    movements = db.relationship('StockMovement', back_populates='product', lazy='dynamic')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sku': self.sku,
+            'name': self.name,
+            'category': self.category,
+            'unit': self.unit,
+            'current_stock': self.current_stock,
+            'min_stock': self.min_stock,
+            'purchase_price': self.purchase_price,
+            'sell_price': self.sell_price,
+            'currency': self.currency,
+            'is_low_stock': self.current_stock < self.min_stock,
+        }
+
+
+class Supplier(db.Model):
+    __tablename__ = 'suppliers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    company = db.Column(db.String(128), nullable=False)
+    contact = db.Column(db.String(128), nullable=True)
+    country = db.Column(db.String(64), nullable=True)
+    lead_time = db.Column(db.Integer, nullable=True)
+
+    movements = db.relationship('StockMovement', back_populates='supplier', lazy='dynamic')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'company': self.company,
+            'contact': self.contact,
+            'country': self.country,
+            'lead_time': self.lead_time,
+        }
+
+
+class StockMovement(db.Model):
+    __tablename__ = 'stock_movements'
+
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    type = db.Column(db.String(8), nullable=False)  # 'in' or 'out'
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)
+    quantity = db.Column(db.Float, nullable=False)
+    cost_per_unit = db.Column(db.Float, nullable=True)
+    date = db.Column(db.Date, nullable=False, default=date.today)
+    reference = db.Column(db.String(128), nullable=True)
+    destination = db.Column(db.String(128), nullable=True)
+
+    product = db.relationship('Product', back_populates='movements')
+    supplier = db.relationship('Supplier', back_populates='movements')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'product_name': self.product.name if self.product else None,
+            'type': self.type,
+            'supplier_id': self.supplier_id,
+            'supplier_company': self.supplier.company if self.supplier else None,
+            'quantity': self.quantity,
+            'cost_per_unit': self.cost_per_unit,
+            'date': self.date.isoformat(),
+            'reference': self.reference,
+            'destination': self.destination,
+        }
+
+
+class ExchangeRate(db.Model):
+    __tablename__ = 'exchange_rates'
+
+    id = db.Column(db.Integer, primary_key=True)
+    base_currency = db.Column(db.String(3), nullable=False, default='GEL')
+    target_currency = db.Column(db.String(3), nullable=False)
+    rate = db.Column(db.Float, nullable=False)
+    date = db.Column(db.Date, nullable=False, default=date.today)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'base_currency': self.base_currency,
+            'target_currency': self.target_currency,
+            'rate': self.rate,
+            'date': self.date.isoformat(),
+        }
