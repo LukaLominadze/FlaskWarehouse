@@ -1,5 +1,7 @@
 from datetime import date, time
+from flask import session
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
@@ -14,6 +16,16 @@ class User(db.Model):
 
     trips = db.relationship('Trip', back_populates='owner', lazy='dynamic')
     memberships = db.relationship('TripMember', back_populates='user', lazy='dynamic')
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    @property
+    def is_authenticated(self):
+        return session.get('user_id') == self.id
 
 
 class Trip(db.Model):
