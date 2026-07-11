@@ -51,6 +51,13 @@
                 </ul>
                 <ul class="navbar-nav">
                     {% if session.get('user_id') %}
+                    {% if current_user and current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link text-warning" href="{{ url_for('admin.admin_dashboard') }}">
+                            Admin
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('auth.profile') }}">Profile</a>
                     </li>

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Admin Dashboard</h1>
+
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-bg-primary">
+            <div class="card-body text-center">
+                <h6 class="card-title">Users</h6>
+                <p class="display-6 mb-0">{{ user_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-bg-warning">
+            <div class="card-body text-center">
+                <h6 class="card-title">Admins</h6>
+                <p class="display-6 mb-0">{{ admin_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-bg-success">
+            <div class="card-body text-center">
+                <h6 class="card-title">Products</h6>
+                <p class="display-6 mb-0">{{ product_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-bg-info">
+            <div class="card-body text-center">
+                <h6 class="card-title">Suppliers</h6>
+                <p class="display-6 mb-0">{{ supplier_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-bg-secondary">
+            <div class="card-body text-center">
+                <h6 class="card-title">Movements</h6>
+                <p class="display-6 mb-0">{{ movement_count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Users</h5>
+                <a href="{{ url_for('admin.user_list') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in recent_users %}
+                        <tr>
+                            <td>{{ u.id }}</td>
+                            <td><a href="{{ url_for('admin.user_detail', user_id=u.id) }}">{{ u.username }}</a></td>
+                            <td>{{ u.email }}</td>
+                            <td>
+                                {% if u.is_admin %}
+                                <span class="badge bg-warning">Admin</span>
+                                {% else %}
+                                <span class="badge bg-secondary">User</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="mb-0">Quick Actions</h5></div>
+            <div class="card-body">
+                <a href="{{ url_for('admin.user_create') }}" class="btn btn-primary w-100 mb-2">+ Create User</a>
+                <a href="{{ url_for('admin.user_list') }}" class="btn btn-outline-primary w-100 mb-2">Manage Users</a>
+                <a href="{{ url_for('main.product_create') }}" class="btn btn-success w-100 mb-2">+ New Product</a>
+                <a href="{{ url_for('main.supplier_create') }}" class="btn btn-secondary w-100 mb-2">+ New Supplier</a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark w-100">Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
