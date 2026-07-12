@@ -127,7 +127,9 @@ class Product(db.Model):
     purchase_price = db.Column(db.Float, nullable=False, default=0)
     sell_price = db.Column(db.Float, nullable=False, default=0)
     currency = db.Column(db.String(3), nullable=False, default='GEL')
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
 
+    owner = db.relationship('User')
     movements = db.relationship('StockMovement', back_populates='product', lazy='dynamic')
 
     def to_dict(self):
@@ -142,6 +144,7 @@ class Product(db.Model):
             'purchase_price': self.purchase_price,
             'sell_price': self.sell_price,
             'currency': self.currency,
+            'created_by': self.created_by,
             'is_low_stock': self.current_stock < self.min_stock,
         }
 
@@ -154,7 +157,9 @@ class Supplier(db.Model):
     contact = db.Column(db.String(128), nullable=True)
     country = db.Column(db.String(64), nullable=True)
     lead_time = db.Column(db.Integer, nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
 
+    owner = db.relationship('User')
     movements = db.relationship('StockMovement', back_populates='supplier', lazy='dynamic')
 
     def to_dict(self):
@@ -164,6 +169,7 @@ class Supplier(db.Model):
             'contact': self.contact,
             'country': self.country,
             'lead_time': self.lead_time,
+            'created_by': self.created_by,
         }
 
 
@@ -207,6 +213,7 @@ class ExchangeRate(db.Model):
     target_currency = db.Column(db.String(3), nullable=False)
     rate = db.Column(db.Float, nullable=False)
     date = db.Column(db.Date, nullable=False, default=date.today)
+    source = db.Column(db.String(16), nullable=False, default='manual')
 
     def to_dict(self):
         return {
@@ -215,4 +222,5 @@ class ExchangeRate(db.Model):
             'target_currency': self.target_currency,
             'rate': self.rate,
             'date': self.date.isoformat(),
+            'source': self.source,
         }

@@ -1,9 +1,9 @@
 from datetime import date
-from flask import render_template, redirect, url_for, request, flash, session
+from flask import render_template, redirect, url_for, request, flash, session, abort, current_app
 from app.main import bp
 from app.main.forms import (ProductForm, SupplierForm, StockInForm,
-                            StockOutForm, ExchangeRateForm)
-from app.models import db, Product, Supplier, StockMovement, ExchangeRate
+                            StockOutForm)
+from app.models import db, Product, Supplier, StockMovement, ExchangeRate, User
 from app.services.product_service import ProductService
 from app.services.supplier_service import SupplierService
 from app.services.stock_service import StockService
@@ -59,6 +59,7 @@ def product_create():
             'purchase_price': form.purchase_price.data,
             'sell_price': form.sell_price.data,
             'currency': form.currency.data,
+            'created_by': session['user_id'],
         })
         flash('Product created.', 'success')
         return redirect(url_for('main.product_list'))
@@ -77,6 +78,9 @@ def product_detail(product_id):
 @login_required
 def product_edit(product_id):
     product = Product.query.get_or_404(product_id)
+    user = User.query.get(session['user_id'])
+    if product.created_by and product.created_by != session['user_id'] and not user.is_admin:
+        abort(403)
     form = ProductForm(obj=product, original_sku=product.sku)
     if form.validate_on_submit():
         ProductService.update(product_id, {
@@ -98,6 +102,10 @@ def product_edit(product_id):
 @bp.route('/products/<int:product_id>/delete', methods=['POST'])
 @login_required
 def product_delete(product_id):
+    product = Product.query.get_or_404(product_id)
+    user = User.query.get(session['user_id'])
+    if product.created_by and product.created_by != session['user_id'] and not user.is_admin:
+        abort(403)
     ProductService.delete(product_id)
     flash('Product deleted.', 'success')
     return redirect(url_for('main.product_list'))
@@ -129,6 +137,7 @@ def supplier_create():
             'contact': form.contact.data,
             'country': form.country.data,
             'lead_time': form.lead_time.data,
+            'created_by': session['user_id'],
         })
         flash('Supplier created.', 'success')
         return redirect(url_for('main.supplier_list'))
@@ -139,6 +148,9 @@ def supplier_create():
 @login_required
 def supplier_edit(supplier_id):
     supplier = Supplier.query.get_or_404(supplier_id)
+    user = User.query.get(session['user_id'])
+    if supplier.created_by and supplier.created_by != session['user_id'] and not user.is_admin:
+        abort(403)
     form = SupplierForm(obj=supplier)
     if form.validate_on_submit():
         SupplierService.update(supplier_id, {
@@ -155,6 +167,10 @@ def supplier_edit(supplier_id):
 @bp.route('/suppliers/<int:supplier_id>/delete', methods=['POST'])
 @login_required
 def supplier_delete(supplier_id):
+    supplier = Supplier.query.get_or_404(supplier_id)
+    user = User.query.get(session['user_id'])
+    if supplier.created_by and supplier.created_by != session['user_id'] and not user.is_admin:
+        abort(403)
     SupplierService.delete(supplier_id)
     flash('Supplier deleted.', 'success')
     return redirect(url_for('main.supplier_list'))
@@ -219,7 +235,7 @@ def import_csv():
             flash('File must be a CSV.', 'danger')
             return redirect(url_for('main.import_csv'))
         content = file.read().decode('utf-8')
-        products = ProductService.import_csv(content)
+        products = ProductService.import_csv(content, created_by=session['user_id'])
         flash(f'Imported {len(products)} products.', 'success')
         return redirect(url_for('main.product_list'))
     return render_template('main/import_csv.html')
@@ -227,15 +243,23 @@ def import_csv():
 
 @bp.route('/exchange-rates', methods=['GET', 'POST'])
 def exchange_rates():
-    form = ExchangeRateForm()
-    if form.validate_on_submit():
-        ExchangeRateService.update_rate(form.currency.data, form.rate.data)
-        flash(f'Rate for {form.currency.data} updated.', 'success')
+    if request.method == 'POST':
+        success, message = ExchangeRateService.fetch_from_api()
+        flash(message, 'success' if success else 'danger')
         return redirect(url_for('main.exchange_rates'))
+
     rates = ExchangeRateService.get_all_rates()
-    defaults = ExchangeRateService.RATES
-    return render_template('main/exchange_rates.html', form=form,
-                           rates=rates, defaults=defaults)
+    last_updated = ExchangeRateService.get_last_updated()
+    currencies = ExchangeRateService.get_available_currencies()
+    api_key_set = bool(
+        current_app.config.get('EXCHANGE_RATE_API_KEY')
+        and current_app.config.get('EXCHANGE_RATE_API_KEY') != 'your-api-key-here'
+    )
+    return render_template('main/exchange_rates.html',
+                           rates=rates,
+                           currencies=currencies,
+                           last_updated=last_updated,
+                           api_key_set=api_key_set)
 
 
 @bp.route('/reports')

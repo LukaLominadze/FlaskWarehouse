@@ -11,3 +11,4 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)
     DEBUG = True if os.environ.get('DEBUG') == 'True' else False
+    EXCHANGE_RATE_API_KEY = os.environ.get('EXCHANGE_RATE_API_KEY') or ''

@@ -6,56 +6,142 @@
 <h1 class="mb-4">Exchange Rates</h1>
 
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-8">
         <div class="card mb-4">
-            <div class="card-header"><h5>Current Rates (to GEL)</h5></div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Rates (to GEL)</h5>
+                {% if last_updated %}
+                <small class="text-muted">Last updated: {{ last_updated }}</small>
+                {% endif %}
+            </div>
             <div class="card-body">
-                <table class="table table-sm mb-0">
-                    <thead>
-                        <tr><th>Currency</th><th>Rate</th><th>Source</th></tr>
+                {% if not api_key_set %}
+                <div class="alert alert-warning py-2 mb-3">
+                    API key not configured. Set <code>EXCHANGE_RATE_API_KEY</code> in <code>.env</code> to enable live rates.
+                </div>
+                {% endif %}
+
+                {% if rates %}
+                <table class="table table-sm table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr><th>Currency</th><th>Rate to GEL</th></tr>
                     </thead>
                     <tbody>
-                        {% for curr, rate in defaults.items() %}
-                        <tr>
-                            <td><strong>{{ curr }}</strong></td>
-                            <td>{{ rate }}</td>
-                            <td><span class="badge bg-secondary">Default</span></td>
-                        </tr>
-                        {% endfor %}
+                        {% set displayed = [] %}
                         {% for r in rates %}
-                        <tr>
-                            <td><strong>{{ r.target_currency }}</strong></td>
-                            <td>{{ r.rate }}</td>
-                            <td><span class="badge bg-primary">{{ r.date }}</span></td>
-                        </tr>
+                            {% if r.target_currency not in displayed %}
+                            {% if displayed.append(r.target_currency) %}{% endif %}
+                            <tr>
+                                <td><strong>{{ r.target_currency }}</strong></td>
+                                <td>{{ r.rate }}</td>
+                            </tr>
+                            {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
+                {% else %}
+                <p class="text-muted mb-0">No rates loaded yet. Click refresh to fetch from API.</p>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header"><h5>Update Rate</h5></div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header"><h5>Actions</h5></div>
             <div class="card-body">
                 <form method="POST">
-                    {{ form.hidden_tag() }}
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.currency.label }}</label>
-                        {{ form.currency(class="form-select") }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.rate.label }}</label>
-                        {{ form.rate(class="form-control", step="0.001") }}
-                        {% for error in form.rate.errors %}
-                        <div class="text-danger">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    {{ form.submit(class="btn btn-primary") }}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success w-100" {% if not api_key_set %}disabled{% endif %}>
+                        Refresh from API
+                    </button>
                 </form>
+                {% if not api_key_set %}
+                <small class="text-muted d-block mt-2">Configure your API key first.</small>
+                {% else %}
+                <small class="text-muted d-block mt-2">Free tier: 1,500 requests/month.</small>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5>Convert Currency</h5></div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <label class="form-label small">Amount</label>
+                    <input type="number" id="conv-amount" class="form-control" value="1" min="0" step="any">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">From</label>
+                    <input type="text" id="conv-from" class="form-control" list="currency-list" placeholder="e.g. USD" autocomplete="off">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">To</label>
+                    <input type="text" id="conv-to" class="form-control" list="currency-list" placeholder="e.g. GEL" value="GEL" autocomplete="off">
+                </div>
+                <datalist id="currency-list">
+                    {% for c in currencies %}
+                    <option value="{{ c }}">
+                    {% endfor %}
+                </datalist>
+                <button type="button" id="conv-btn" class="btn btn-primary w-100 mt-2" onclick="doConvert()">Calculate</button>
+                <div id="conv-result" class="mt-3" style="display:none;">
+                    <div class="alert alert-info py-2 mb-0" id="conv-result-text"></div>
+                </div>
+                <div id="conv-error" class="mt-3" style="display:none;">
+                    <div class="alert alert-warning py-2 mb-0" id="conv-error-text"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doConvert() {
+    var amount = document.getElementById('conv-amount').value;
+    var from = document.getElementById('conv-from').value.trim().toUpperCase();
+    var to = document.getElementById('conv-to').value.trim().toUpperCase();
+    var resultDiv = document.getElementById('conv-result');
+    var errorDiv = document.getElementById('conv-error');
+
+    resultDiv.style.display = 'none';
+    errorDiv.style.display = 'none';
+
+    if (!from || !to) {
+        errorDiv.style.display = 'block';
+        document.getElementById('conv-error-text').textContent = 'Please enter both currencies.';
+        return;
+    }
+
+    document.getElementById('conv-btn').disabled = true;
+    document.getElementById('conv-btn').textContent = 'Calculating...';
+
+    fetch('/api/convert?amount=' + encodeURIComponent(amount) + '&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            document.getElementById('conv-btn').disabled = false;
+            document.getElementById('conv-btn').textContent = 'Calculate';
+            if (data.error) {
+                errorDiv.style.display = 'block';
+                document.getElementById('conv-error-text').textContent = data.error;
+            } else {
+                resultDiv.style.display = 'block';
+                document.getElementById('conv-result-text').textContent =
+                    data.amount + ' ' + data.from + ' = ' + data.result + ' ' + data.to;
+            }
+        })
+        .catch(function(err) {
+            document.getElementById('conv-btn').disabled = false;
+            document.getElementById('conv-btn').textContent = 'Calculate';
+            errorDiv.style.display = 'block';
+            document.getElementById('conv-error-text').textContent = 'Request failed.';
+        });
+}
+
+document.getElementById('conv-amount').addEventListener('keydown', function(e) { if (e.key === 'Enter') doConvert(); });
+document.getElementById('conv-from').addEventListener('keydown', function(e) { if (e.key === 'Enter') doConvert(); });
+document.getElementById('conv-to').addEventListener('keydown', function(e) { if (e.key === 'Enter') doConvert(); });
+</script>
 {% endblock %}

@@ -67,7 +67,13 @@
                     {% endif %}
                 </td>
                 <td>
+                    {% if current_user and (p.created_by == current_user.id or current_user.is_admin) %}
                     <a href="{{ url_for('main.product_edit', product_id=p.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <form method="POST" action="{{ url_for('main.product_delete', product_id=p.id) }}" class="d-inline" onsubmit="return confirm('Delete this product?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

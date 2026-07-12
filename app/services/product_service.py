@@ -42,6 +42,7 @@ class ProductService:
             purchase_price=data.get('purchase_price', 0),
             sell_price=data.get('sell_price', 0),
             currency=data.get('currency', 'GEL'),
+            created_by=data.get('created_by'),
         )
         db.session.add(product)
         db.session.commit()
@@ -64,7 +65,7 @@ class ProductService:
         db.session.commit()
 
     @staticmethod
-    def import_csv(file_content):
+    def import_csv(file_content, created_by=None):
         reader = csv.DictReader(io.StringIO(file_content))
         products = []
         for row in reader:
@@ -78,6 +79,7 @@ class ProductService:
                 purchase_price=float(row.get('purchase_price', 0)),
                 sell_price=float(row.get('sell_price', 0)),
                 currency=row.get('currency', 'GEL'),
+                created_by=created_by,
             )
             db.session.add(product)
             products.append(product)

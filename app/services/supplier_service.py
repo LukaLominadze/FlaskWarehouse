@@ -31,6 +31,7 @@ class SupplierService:
             contact=data.get('contact'),
             country=data.get('country'),
             lead_time=data.get('lead_time'),
+            created_by=data.get('created_by'),
         )
         db.session.add(supplier)
         db.session.commit()

@@ -57,12 +57,3 @@ class StockOutForm(FlaskForm):
     date = StringField('Date', validators=[DataRequired()])
     reference = StringField('Reference', validators=[Optional(), Length(max=128)])
     submit = SubmitField('Issue Stock')
-
-
-class ExchangeRateForm(FlaskForm):
-    currency = SelectField('Currency', choices=[
-        ('USD', 'USD'), ('EUR', 'EUR'), ('TRY', 'TRY'),
-        ('GBP', 'GBP'), ('RUB', 'RUB'),
-    ])
-    rate = FloatField('Rate (to GEL)', validators=[DataRequired(), NumberRange(min=0)])
-    submit = SubmitField('Update Rate')

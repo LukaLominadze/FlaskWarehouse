@@ -1,10 +1,12 @@
-from flask import request, jsonify
+from flask import request, jsonify, session
 from app.api import bp
+from app.auth.decorators import login_required
 from app.services.product_service import ProductService
 from app.services.supplier_service import SupplierService
 from app.services.stock_service import StockService
 from app.services.report_service import ReportService
 from app.services.exchange_rate_service import ExchangeRateService
+from app.models import Product, Supplier, User
 
 
 @bp.route('/status')
@@ -27,10 +29,12 @@ def get_products():
 
 
 @bp.route('/products', methods=['POST'])
+@login_required
 def create_product():
     data = request.get_json()
     if not data or 'sku' not in data or 'name' not in data:
         return jsonify({'error': 'sku and name are required'}), 400
+    data['created_by'] = session['user_id']
     product = ProductService.create(data)
     return jsonify(product.to_dict()), 201
 
@@ -42,25 +46,36 @@ def get_product(product_id):
 
 
 @bp.route('/products/<int:product_id>', methods=['PUT'])
+@login_required
 def update_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    user = User.query.get(session['user_id'])
+    if product.created_by and product.created_by != session['user_id'] and not user.is_admin:
+        return jsonify({'error': 'forbidden'}), 403
     data = request.get_json()
     product = ProductService.update(product_id, data)
     return jsonify(product.to_dict())
 
 
 @bp.route('/products/<int:product_id>', methods=['DELETE'])
+@login_required
 def delete_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    user = User.query.get(session['user_id'])
+    if product.created_by and product.created_by != session['user_id'] and not user.is_admin:
+        return jsonify({'error': 'forbidden'}), 403
     ProductService.delete(product_id)
     return '', 204
 
 
 @bp.route('/products/import', methods=['POST'])
+@login_required
 def import_products():
     if 'file' not in request.files:
         return jsonify({'error': 'no file provided'}), 400
     file = request.files['file']
     content = file.read().decode('utf-8')
-    products = ProductService.import_csv(content)
+    products = ProductService.import_csv(content, created_by=session['user_id'])
     return jsonify({'imported': len(products)}), 201
 
 
@@ -138,23 +153,35 @@ def get_suppliers():
 
 
 @bp.route('/suppliers', methods=['POST'])
+@login_required
 def create_supplier():
     data = request.get_json()
     if not data or 'company' not in data:
         return jsonify({'error': 'company is required'}), 400
+    data['created_by'] = session['user_id']
     supplier = SupplierService.create(data)
     return jsonify(supplier.to_dict()), 201
 
 
 @bp.route('/suppliers/<int:supplier_id>', methods=['PUT'])
+@login_required
 def update_supplier(supplier_id):
+    supplier = Supplier.query.get_or_404(supplier_id)
+    user = User.query.get(session['user_id'])
+    if supplier.created_by and supplier.created_by != session['user_id'] and not user.is_admin:
+        return jsonify({'error': 'forbidden'}), 403
     data = request.get_json()
     supplier = SupplierService.update(supplier_id, data)
     return jsonify(supplier.to_dict())
 
 
 @bp.route('/suppliers/<int:supplier_id>', methods=['DELETE'])
+@login_required
 def delete_supplier(supplier_id):
+    supplier = Supplier.query.get_or_404(supplier_id)
+    user = User.query.get(session['user_id'])
+    if supplier.created_by and supplier.created_by != session['user_id'] and not user.is_admin:
+        return jsonify({'error': 'forbidden'}), 403
     SupplierService.delete(supplier_id)
     return '', 204
 
@@ -164,21 +191,24 @@ def get_exchange_rates():
     return jsonify(ExchangeRateService.get_all_rates())
 
 
-@bp.route('/exchange-rates', methods=['POST'])
-def update_exchange_rate():
-    data = request.get_json()
-    if not data or 'currency' not in data or 'rate' not in data:
-        return jsonify({'error': 'currency and rate are required'}), 400
-    ExchangeRateService.update_rate(data['currency'], data['rate'])
-    return jsonify({'status': 'updated'})
-
-
 @bp.route('/convert', methods=['GET'])
 def convert_currency():
-    amount = request.args.get('amount', 0, type=float)
+    amount = request.args.get('amount', 1, type=float)
     from_currency = request.args.get('from', 'USD')
-    result = ExchangeRateService.convert(amount, from_currency)
-    return jsonify({'amount': amount, 'from': from_currency, 'to': 'GEL', 'result': result})
+    to_currency = request.args.get('to', 'GEL')
+    result = ExchangeRateService.convert(amount, from_currency, to_currency)
+    if result is None:
+        return jsonify({'error': 'rate not available'}), 400
+    return jsonify({'amount': amount, 'from': from_currency, 'to': to_currency, 'result': result})
+
+
+@bp.route('/exchange-rates/refresh', methods=['POST'])
+def refresh_exchange_rates():
+    success, message = ExchangeRateService.fetch_from_api()
+    if not success:
+        return jsonify({'error': message}), 400
+    rates = ExchangeRateService.get_all_rates()
+    return jsonify({'status': 'refreshed', 'rates': rates})
 
 
 @bp.route('/reports/turnover', methods=['GET'])
